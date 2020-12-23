@@ -15,9 +15,8 @@ import datetime
 import requests
 from functools import wraps
 
+app = Flask(__name__)
 
-
-app= Flask(__name__)
 app.config['SECRET_KEY']='secretkey'
 basedir = os.path.abspath(os.path.dirname(__file__)) #Where to store the file for the db (same folder as the running application)
 app.config['SQLALCHEMY_DATABASE_URI'] ='sqlite:///' + os.path.join(basedir,'users.db') #initalized db
@@ -86,7 +85,8 @@ def token_required(f):
 #User Endpoints
 @app.route('/api/login', methods=['POST'])
 def login():
-    login=request.json
+    login=request.form
+    print(login)
 
     user=User.query.filter_by(email=login['email']).first()
 
@@ -102,8 +102,10 @@ def login():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    data=request.json
+    data=request.form
     emailUser=data['email']
+    print(emailUser)
+
 
     test=User.query.filter_by(email=emailUser).first()
 
@@ -158,3 +160,12 @@ def confirm_email_api(token):
         db.session.add(user)
         db.session.commit()
         return jsonify(message='email_confirm_success')
+
+@app.route('/api/login')
+def hello_world():
+    return render_template('index.jinja2')
+
+
+if __name__ == "__main__":
+    app.debug = True
+    app.run()
