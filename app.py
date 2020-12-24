@@ -67,7 +67,7 @@ class Portfolio(db.Model):
     id=Column(Integer,primary_key=True)
     user_id=Column(String(50))
     portfolio_id=Column(String(50))
-    portfolioName=Column(String(50),unique=True)
+    portfolioName=Column(String(50))
     dateCreated=Column(String())
     marketValue=Column(Float)
 
@@ -171,21 +171,39 @@ def portfolioCreate(current_user):
     user_data={}
     user_data['public_id']=current_user.public_id
     portfolio=request.form
+    userPort=Portfolio.query.filter_by(user_id=user_data['public_id'], portfolioName=portfolio['portfolioName']).first()
+    if userPort:
+        return jsonify(message="Portfolio with the same name exists"),401
+    else:
+        newPortfolio=Portfolio(
+                user_id=user_data['public_id'],
+                portfolio_id=str(uuid.uuid4()),
+                portfolioName=portfolio['portfolioName'],
+                dateCreated=datetime.datetime.now(),
+                marketValue=portfolio['marketValue']
 
-    newPortfolio=Portfolio(
-            user_id=user_data['public_id'],
-            portfolio_id=str(uuid.uuid4()),
-            portfolioName=portfolio['portfolioName'],
-            dateCreated=datetime.datetime.now(),
-            marketValue=portfolio['marketValue']
+        )
+        db.session.add(newPortfolio)
+        db.session.commit()
+        return jsonify(message="Portfolio Created"),201
 
-    )
-    db.session.add(newPortfolio)
-    db.session.commit()
-    return jsonify(message="Portfolio Created"),201
-
-
-
+@app.route('/api/portfolio', methods=['GET'])
+@token_required
+def portfolioView(current_user):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id']).all()
+    output=[]
+    if userPort:
+        for port in userPort:
+            portfolio={}
+            portfolio['portfolioName']=port.portfolioName
+            portfolio['marketValue'] =port.marketValue
+            portfolio['dateCreated'] =port.dateCreated
+            output.append(portfolio)
+        return jsonify(userPortfolios=output)
+    else:
+        return jsonify(message="No portfolios")
 
 @app.route('/api/login')
 def hello_world():
