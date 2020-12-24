@@ -64,6 +64,15 @@ class User(db.Model):
     confirmedEmail=Column(Boolean)
     confirmedOn=Column(String())
 
+class Portfolio(db.Model):
+    id=Column(Integer,primary_key=True)
+    user_id=Column(String(50))
+    portfolio_id=Column(String(50))
+    portfolioName=Column(String(50),unique=True)
+    dateCreated=Column(String())
+    cashValue=Column(Float)
+
+
 
 def token_required(f):
     @wraps(f)
@@ -88,13 +97,13 @@ def login():
     login=request.form
     print(login)
 
-    user=User.query.filter_by(email=login['email']).first()
+    user=User.query.filter_by(email=login['email']).first() #Qeuried id=email
 
     if not user:
         return jsonify(message='A user with this email does not exist.')
     if not user.confirmedEmail:
         return jsonify(message='User is not verified')
-    if check_password_hash(user.password,login['password']):
+    if check_password_hash(user.password,login['password']): #queried password
         token=jwt.encode({'public_id': user.public_id,'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
         return jsonify(token=token)
     else:
@@ -143,10 +152,6 @@ def register():
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
-    return redirect('/auth/' + token)
-
-@app.route('/api/confirm_email/<token>')
-def confirm_email_api(token):
     try:
         email = s.loads(token, salt='email-confirm', max_age=3600)
     except SignatureExpired:
