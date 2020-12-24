@@ -245,6 +245,7 @@ def deletePortfolio(current_user, portfolio_id):
     else:
         return jsonify(message="Portfolio does not exist")
 
+
 @app.route('/api/register')
 def register_page():
     return render_template('register.jinja2')
