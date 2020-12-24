@@ -251,6 +251,9 @@ def register_page():
 def login_page():
     return render_template('login.jinja2')
 
+@app.route('/')
+def landing_page():
+    return render_template('landing-page.jinja2')
 
 if __name__ == "__main__":
     app.debug = True
