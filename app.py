@@ -245,8 +245,8 @@ def deletePortfolio(current_user, portfolio_id):
 
 
 @app.route('/api/login')
-def hello_world():
-    return render_template('index.jinja2')
+def login_page():
+    return render_template('login.jinja2')
 
 
 if __name__ == "__main__":
