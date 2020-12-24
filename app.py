@@ -112,9 +112,6 @@ def login():
 def register():
     data=request.form
     emailUser=data['email']
-    print(emailUser)
-
-
     test=User.query.filter_by(email=emailUser).first()
 
     if test:
@@ -148,7 +145,17 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         return jsonify(message='User Created'),201
+@app.route('/api/user', methods=['GET'])
+@token_required
+def user(current_user):
+    user_data={}
+    user_data['firstName']=current_user.firstName
+    user_data['lastName']=current_user.lastName
+    user_data['email']=current_user.email
+    user_data['confirmedEmail']=current_user.confirmedEmail
+    user_data['confirmedOn']=current_user.confirmedOn
 
+    return jsonify(user_data)
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
     try:
