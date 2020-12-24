@@ -66,7 +66,7 @@ class User(db.Model):
 class Portfolio(db.Model):
     id=Column(Integer,primary_key=True)
     user_id=Column(String(50))
-    portfolio_id=Column(String(50))
+    portfolio_id=Column(String(50),unique=True)
     portfolioName=Column(String(50))
     dateCreated=Column(String())
     marketValue=Column(Float)
@@ -200,10 +200,42 @@ def portfolioView(current_user):
             portfolio['portfolioName']=port.portfolioName
             portfolio['marketValue'] =port.marketValue
             portfolio['dateCreated'] =port.dateCreated
+            portfolio['portfolio_id']=port.portfolio_id
             output.append(portfolio)
         return jsonify(userPortfolios=output)
     else:
         return jsonify(message="No portfolios")
+
+@app.route('/api/portfolio/<portfolio_id>', methods=['GET'])
+@token_required
+def viewPortfolio(current_user,portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+
+    if userPort:
+        portfolio={}
+        portfolio['portfolioName']=userPort.portfolioName
+        portfolio['marketValue'] =userPort.marketValue
+        portfolio['dateCreated'] =userPort.dateCreated
+
+        return jsonify(portfolio=portfolio)
+    else:
+        return jsonify(message="Could not find portfolio")
+@app.route('/api/portfolio/<portfolio_id>', methods=['DELETE'])
+@token_required
+def deletePortfolio(current_user, portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+
+    if userPort:
+        db.session.delete(userPort)
+        db.session.commit()
+        return jsonify(message="Portfolio Closed")
+    else:
+        return jsonify(message="Portfolio does not exist")
+
 
 @app.route('/api/login')
 def hello_world():
