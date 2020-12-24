@@ -72,7 +72,20 @@ class Portfolio(db.Model):
     portfolioName=Column(String(50))
     dateCreated=Column(String())
     marketValue=Column(Float)
+    currency=Column(String())
+    institution=Column(String())
+    cash=Column(Float)
 
+class Transcation(db.Model):
+    id=Column(Integer,primary_key=True)
+    user_id=Column(String(50))
+    portfolio_id=Column(String(50),unique=True)
+    date=Column(String())
+    typeCurr=Column(String())
+    Curr=Column(String())
+    typeTrans=Column(String())
+    priceofCryptoATTrans=Column(Float)
+    quantityTrans=Column(Float)
 
 
 def token_required(f):
@@ -232,6 +245,22 @@ def portfolioView(current_user):
     else:
         return jsonify(message="No portfolios")
 
+@app.route('/api/portfolioNames', methods=['GET'])
+@token_required
+def portfolioViewNames(current_user):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id']).all()
+    output=[]
+    if userPort:
+        for port in userPort:
+            portfolio={}
+            portfolio['portfolioName']=port.portfolioName
+            output.append(portfolio)
+        return jsonify(userPortfolios=output)
+    else:
+        return jsonify(message="No portfolios")
+
 @app.route('/api/portfolio/<portfolio_id>', methods=['GET'])
 @token_required
 def viewPortfolio(current_user,portfolio_id):
@@ -261,6 +290,9 @@ def deletePortfolio(current_user, portfolio_id):
         return jsonify(message="Portfolio Closed")
     else:
         return jsonify(message="Portfolio does not exist")
+# @app.route('/api/cryptoTransaction', methods=['POST'])
+# @token_required
+# def 
 
 @app.route('/api/logout')
 def logout_page():
