@@ -100,6 +100,8 @@ def login():
 
     if not user:
         return jsonify(message='A user with this email does not exist.')
+    if not check_password_hash(user.password,login['password']):
+        return jsonify(message='Incorrect Password')
     if not user.confirmedEmail:
         return jsonify(message='User is not verified')
     if check_password_hash(user.password,login['password']): #queried password
