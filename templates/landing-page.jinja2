@@ -30,6 +30,20 @@
     to   { opacity: 1; transform: translateY(0px); }
     }
 
+        .navbar{
+            animation: fadeIn 2s ease-in both;
+        }
+        @keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translate3d(0, -20%, 0);
+	}
+	to {
+		opacity: 1;
+		transform: translate3d(0, 0, 0);
+	    }
+    }
+
 
 </style>
 {% endblock %}
@@ -41,7 +55,7 @@
         <div class="bg-wrapper">
             <h1>Control Your Crypto.</h1>
             <p>Introducing CryptoBoard: Revolutionizing Crypto Management</p>
-            <a class="btn" href="#" role="button">Let's Go</a>
+            <a class="btn" href="{{ url_for('register_page') }}" role="button">Let's Go</a>
         </div>
         </div>
     </div>

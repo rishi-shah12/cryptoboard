@@ -161,9 +161,13 @@ def confirm_email_api(token):
         db.session.commit()
         return jsonify(message='email_confirm_success')
 
+@app.route('/api/register')
+def register_page():
+    return render_template('register.jinja2')
+
 @app.route('/api/login')
 def login_page():
-    return render_template('index.jinja2')
+    return render_template('login.jinja2')
 
 @app.route('/')
 def landing_page():
