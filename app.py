@@ -1,3 +1,4 @@
+import flask
 from flask import Flask,render_template, request, jsonify, make_response, url_for,redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token
@@ -8,13 +9,14 @@ import sendgrid
 from sendgrid.helpers.mail import *
 import json
 import os
+import addon
 import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 import requests
 from functools import wraps
-
+from flask import Flask, session
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__)) #Where to store the file for the db (same folder as the running application)
@@ -76,18 +78,23 @@ class Portfolio(db.Model):
 def token_required(f):
     @wraps(f)
     def decorated(*args,**kwargs):
-        token=None
-        if 'x-access-tokens' in request.headers:
-            token=request.headers['x-access-tokens']
-        if not token:
-            return jsonify(message='Token is missing'),401
-        try:
-            data=jwt.decode(token, app.config['SECRET_KEY'])
-            current_user=User.query.filter_by(public_id=data['public_id']).first()
-        except:
-            return jsonify(message='Token is invalid'),401
+        token = None
+        if 'token' not in session:
+            return render_template('need-to-login-error.jinja2')
+        else:
+            if session is None:
+                return render_template('need-to-login-error.jinja2')
+            if 'cookie' in request.headers:
+                token=session['token']
+            if 'cookie' not in request.headers:
+                return jsonify(message='Token is missing'),401
+            try:
+                data=jwt.decode(token, app.config['SECRET_KEY'])
+                current_user=User.query.filter_by(public_id=data['public_id']).first()
+            except:
+                return jsonify(message='Token is invalid'),401
 
-        return f(current_user, *args, **kwargs)
+            return f(current_user, *args, **kwargs)
     return decorated
 
 #User Endpoints
@@ -103,10 +110,13 @@ def login():
     if not check_password_hash(user.password,login['password']):
         return jsonify(message='Incorrect Password')
     if not user.confirmedEmail:
-        return jsonify(message='User is not verified')
+        return render_template('verify-email.jinja2')
     if check_password_hash(user.password,login['password']): #queried password
         token=jwt.encode({'public_id': user.public_id,'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
-        return jsonify(token=token)
+        session['token'] = token
+        redir = redirect(url_for('user'))
+        redir.headers['x-access-tokens'] = token
+        return redir
     else:
         return jsonify(message='Your email or password is incorrect'),401
 
@@ -147,6 +157,8 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         return jsonify(message='User Created'),201
+
+
 @app.route('/api/user', methods=['GET'])
 @token_required
 def user(current_user):
@@ -157,28 +169,33 @@ def user(current_user):
     user_data['confirmedEmail']=current_user.confirmedEmail
     user_data['confirmedOn']=current_user.confirmedOn
 
-    return jsonify(user_data)
+
+    return render_template('logged-in-landing-page.jinja2', userdata=user_data)
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
     try:
         email = s.loads(token, salt='email-confirm', max_age=3600)
     except SignatureExpired:
-        return jsonify(message='token_expired')
+        return render_template('email-redirect.jinja2', message='Token Expired',
+                               subtitle="You'll need to request a new email", link="{{ url_for(new_email) }}", name="Send Email Again")
     user=User.query.filter_by(email=email).first()
     if user.confirmedEmail:
-         return jsonify(message='email_already_confirmed')
+        return render_template('email-redirect.jinja2', message='Email Already Verified',
+                               subtitle="You have already verified you email", link="{{ url_for(landing_page) }}", name="Back to Home")
     else:
         user.confirmedEmail= True
         user.confirmedOn = datetime.datetime.now()
         db.session.add(user)
         db.session.commit()
-        return jsonify(message='email_confirm_success')
+        return render_template('email-redirect.jinja2', message='Email Successfully Verified',
+                               subtitle="You can now experience Cryptoboard", link="{{ url_for(landing_page) }}", name="Back to Home")
 
 @app.route('/api/portfolio', methods=['POST'])
 @token_required
 def portfolioCreate(current_user):
     user_data={}
     user_data['public_id']=current_user.public_id
+
     portfolio=request.form
     userPort=Portfolio.query.filter_by(user_id=user_data['public_id'], portfolioName=portfolio['portfolioName']).first()
     if userPort:
@@ -245,6 +262,11 @@ def deletePortfolio(current_user, portfolio_id):
     else:
         return jsonify(message="Portfolio does not exist")
 
+@app.route('/api/logout')
+def logout_page():
+    session.pop('token', None)
+    return render_template('signed-out.jinja2')
+
 
 @app.route('/api/register')
 def register_page():
@@ -253,6 +275,11 @@ def register_page():
 @app.route('/api/login')
 def login_page():
     return render_template('login.jinja2')
+
+
+@app.route('/home/logged-in')
+def logged_in_landing_page():
+    return render_template('logged-in.jinja2')
 
 @app.route('/')
 def landing_page():
