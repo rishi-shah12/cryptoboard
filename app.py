@@ -267,6 +267,7 @@ def logout_page():
     session.pop('token', None)
     return render_template('signed-out.jinja2')
 
+
 @app.route('/api/register')
 def register_page():
     return render_template('register.jinja2')
