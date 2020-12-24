@@ -17,7 +17,6 @@ from functools import wraps
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY']='secretkey'
 basedir = os.path.abspath(os.path.dirname(__file__)) #Where to store the file for the db (same folder as the running application)
 app.config['SQLALCHEMY_DATABASE_URI'] ='sqlite:///' + os.path.join(basedir,'users.db') #initalized db
 app.config['SECRET_KEY']='secret-key'
@@ -64,6 +63,15 @@ class User(db.Model):
     confirmedEmail=Column(Boolean)
     confirmedOn=Column(String())
 
+class Portfolio(db.Model):
+    id=Column(Integer,primary_key=True)
+    user_id=Column(String(50))
+    portfolio_id=Column(String(50),unique=True)
+    portfolioName=Column(String(50))
+    dateCreated=Column(String())
+    marketValue=Column(Float)
+
+
 
 def token_required(f):
     @wraps(f)
@@ -88,13 +96,13 @@ def login():
     login=request.form
     print(login)
 
-    user=User.query.filter_by(email=login['email']).first()
+    user=User.query.filter_by(email=login['email']).first() #Qeuried id=email
 
     if not user:
         return jsonify(message='A user with this email does not exist.')
     if not user.confirmedEmail:
         return jsonify(message='User is not verified')
-    if check_password_hash(user.password,login['password']):
+    if check_password_hash(user.password,login['password']): #queried password
         token=jwt.encode({'public_id': user.public_id,'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
         return jsonify(token=token)
     else:
@@ -104,9 +112,6 @@ def login():
 def register():
     data=request.form
     emailUser=data['email']
-    print(emailUser)
-
-
     test=User.query.filter_by(email=emailUser).first()
 
     if test:
@@ -140,13 +145,19 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         return jsonify(message='User Created'),201
+@app.route('/api/user', methods=['GET'])
+@token_required
+def user(current_user):
+    user_data={}
+    user_data['firstName']=current_user.firstName
+    user_data['lastName']=current_user.lastName
+    user_data['email']=current_user.email
+    user_data['confirmedEmail']=current_user.confirmedEmail
+    user_data['confirmedOn']=current_user.confirmedOn
 
+    return jsonify(user_data)
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
-    return redirect('/auth/' + token)
-
-@app.route('/api/confirm_email/<token>')
-def confirm_email_api(token):
     try:
         email = s.loads(token, salt='email-confirm', max_age=3600)
     except SignatureExpired:
@@ -161,9 +172,84 @@ def confirm_email_api(token):
         db.session.commit()
         return jsonify(message='email_confirm_success')
 
+@app.route('/api/portfolio', methods=['POST'])
+@token_required
+def portfolioCreate(current_user):
+    user_data={}
+    user_data['public_id']=current_user.public_id
+    portfolio=request.form
+    userPort=Portfolio.query.filter_by(user_id=user_data['public_id'], portfolioName=portfolio['portfolioName']).first()
+    if userPort:
+        return jsonify(message="Portfolio with the same name exists"),401
+    else:
+        newPortfolio=Portfolio(
+                user_id=user_data['public_id'],
+                portfolio_id=str(uuid.uuid4()),
+                portfolioName=portfolio['portfolioName'],
+                dateCreated=datetime.datetime.now(),
+                marketValue=portfolio['marketValue']
+
+        )
+        db.session.add(newPortfolio)
+        db.session.commit()
+        return jsonify(message="Portfolio Created"),201
+
+@app.route('/api/portfolio', methods=['GET'])
+@token_required
+def portfolioView(current_user):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id']).all()
+    output=[]
+    if userPort:
+        for port in userPort:
+            portfolio={}
+            portfolio['portfolioName']=port.portfolioName
+            portfolio['marketValue'] =port.marketValue
+            portfolio['dateCreated'] =port.dateCreated
+            portfolio['portfolio_id']=port.portfolio_id
+            output.append(portfolio)
+        return jsonify(userPortfolios=output)
+    else:
+        return jsonify(message="No portfolios")
+
+@app.route('/api/portfolio/<portfolio_id>', methods=['GET'])
+@token_required
+def viewPortfolio(current_user,portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+
+    if userPort:
+        portfolio={}
+        portfolio['portfolioName']=userPort.portfolioName
+        portfolio['marketValue'] =userPort.marketValue
+        portfolio['dateCreated'] =userPort.dateCreated
+
+        return jsonify(portfolio=portfolio)
+    else:
+        return jsonify(message="Could not find portfolio")
+@app.route('/api/portfolio/<portfolio_id>', methods=['DELETE'])
+@token_required
+def deletePortfolio(current_user, portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+
+    if userPort:
+        db.session.delete(userPort)
+        db.session.commit()
+        return jsonify(message="Portfolio Closed")
+    else:
+        return jsonify(message="Portfolio does not exist")
+
+@app.route('/api/register')
+def register_page():
+    return render_template('register.jinja2')
+
 @app.route('/api/login')
-def hello_world():
-    return render_template('index.jinja2')
+def login_page():
+    return render_template('login.jinja2')
 
 
 if __name__ == "__main__":
