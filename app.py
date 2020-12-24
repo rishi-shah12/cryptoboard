@@ -162,8 +162,12 @@ def confirm_email_api(token):
         return jsonify(message='email_confirm_success')
 
 @app.route('/api/login')
-def hello_world():
+def login_page():
     return render_template('index.jinja2')
+
+@app.route('/')
+def landing_page():
+    return render_template('landing-page.jinja2')
 
 
 if __name__ == "__main__":

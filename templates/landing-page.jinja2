@@ -1,0 +1,50 @@
+{% extends 'base.jinja2' %}
+
+{% block head %}
+
+
+<style>
+    .title-wrapper h1 p{
+        animation: fade2 2.2s;
+
+    }
+    @keyframes fade2 {
+    from { opacity: 0; transform: translateX(-100px); }
+    to   { opacity: 1; transform: translateX(0px); }
+    }
+
+    .title-wrapper p{
+        font-size: 16px;
+    }
+
+    .bg-wrapper {
+        height: 100vh;
+        background:url('../static/bg.png') right, url('../static/image.png') center bottom , url("../static/img.png") left 2rem top ;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-size: 75vh;
+        animation: fade3 2.2s;
+    }
+    @keyframes fade3 {
+    from { opacity: 0; transform: translateY(100px); }
+    to   { opacity: 1; transform: translateY(0px); }
+    }
+
+
+</style>
+{% endblock %}
+
+<body>
+{% block content %}
+    <div class="page-wrapper" >
+        <div class="title-wrapper">
+        <div class="bg-wrapper">
+            <h1>Control Your Crypto.</h1>
+            <p>Introducing CryptoBoard: Revolutionizing Crypto Management</p>
+            <a class="btn" href="#" role="button">Let's Go</a>
+        </div>
+        </div>
+    </div>
+{% endblock %}
+</body>
+
