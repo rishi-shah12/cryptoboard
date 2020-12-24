@@ -100,6 +100,8 @@ def login():
 
     if not user:
         return jsonify(message='A user with this email does not exist.')
+    if not check_password_hash(user.password,login['password']):
+        return jsonify(message='Incorrect Password')
     if not user.confirmedEmail:
         return jsonify(message='User is not verified')
     if check_password_hash(user.password,login['password']): #queried password
@@ -244,10 +246,17 @@ def deletePortfolio(current_user, portfolio_id):
         return jsonify(message="Portfolio does not exist")
 
 
+@app.route('/api/register')
+def register_page():
+    return render_template('register.jinja2')
+
 @app.route('/api/login')
 def login_page():
     return render_template('login.jinja2')
 
+@app.route('/')
+def landing_page():
+    return render_template('landing-page.jinja2')
 
 if __name__ == "__main__":
     app.debug = True
