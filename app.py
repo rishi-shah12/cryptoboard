@@ -406,6 +406,43 @@ def depositCash (current_user, portfolio_id):
     else:
         return jsonify(message="Portfolio not found")
 
+@app.route('/api/withdrawl/<portfolio_id>', methods=['POST'])
+@token_required
+def withdrawlCash (current_user, portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    trans=request.form
+    withdrawl=float(trans['cash'])
+    if userPort:
+        portfolio={}
+        portfolio['cash']=userPort.cash
+        cash=float(portfolio['cash'])
+    if userPort:
+        if cash >=withdrawl:
+            newTrans=Transcation(
+                    user_id=user['public_id'],
+                    portfolio_id=portfolio_id,
+                    transcation_id=str(uuid.uuid4()),
+                    date=datetime.datetime.now(),
+                    typeCurr="CASH",
+                    Curr=userPort.currency,
+                    typeTrans="WITHDRAWL",
+                    priceofCryptoATTrans=0,
+                    quantityTrans=0,
+                    TranscationValue=trans['cash']
+                )
+            userPort.cash=cash-withdrawl
+            db.session.add(newTrans)
+            db.session.commit()
+            return jsonify(message="Successful Transcation")
+        else:
+            return jsonify(message="You do not have the funds")
+        
+    else:
+        return jsonify(message="Portfolio not found")
+
+
 @app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
 @token_required
 def transcations (current_user, portfolio_id):
