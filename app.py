@@ -79,7 +79,7 @@ class Portfolio(db.Model):
 class Transcation(db.Model):
     id=Column(Integer,primary_key=True)
     user_id=Column(String(50))
-    portfolio_id=Column(String(50),unique=True)
+    portfolio_id=Column(String(50))
     transcation_id=Column(String(50),unique=True)
     date=Column(String())
     typeCurr=Column(String())
@@ -87,6 +87,7 @@ class Transcation(db.Model):
     typeTrans=Column(String())
     priceofCryptoATTrans=Column(Float)
     quantityTrans=Column(Float)
+    TranscationValue=Column(Float)
 
 
 def token_required(f):
@@ -303,18 +304,17 @@ def buyCrypto (current_user, portfolio_id):
     user={}
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    # cash=float(userPort['cash'])
-    # price=float(trans['priceofTrans'])
     trans=request.form
-    user_trans={}
-    user_trans['cash']=userPort.cash
+    cost=float(trans['TranscationValue'])
     
-    cash = jsonify(user_trans['cash'])
-    price=jsonify(trans['priceofTrans'])
     if userPort:
-        if cash >=price:
+        portfolio={}
+        portfolio['cash']=userPort.cash
+        cash=float(portfolio['cash'])
+    if userPort:
+        if cash >=cost:
             newTrans=Transcation(
-                user_id=user_data['public_id'],
+                user_id=user['public_id'],
                 portfolio_id=portfolio_id,
                 transcation_id=str(uuid.uuid4()),
                 date=datetime.datetime.now(),
@@ -322,8 +322,10 @@ def buyCrypto (current_user, portfolio_id):
                 Curr=trans['curr'],
                 typeTrans="BUY",
                 priceofCryptoATTrans=trans['priceofTrans'],
-                quantityTrans=trans['quantity']
+                quantityTrans=round((float(trans['TranscationValue'])/float(trans['priceofTrans'])), 2),
+                TranscationValue=trans['TranscationValue']
             )
+            userPort.cash=cash-cost
             db.session.add(newTrans)
             db.session.commit()
             return jsonify(message="Successful Transcation")
@@ -332,7 +334,26 @@ def buyCrypto (current_user, portfolio_id):
     else:
         return jsonify(message="Portfolio not found")
 
-
+@app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
+@token_required
+def transcations (current_user, portfolio_id):
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    output=[]
+    if userTrans:
+        for Trans in userTrans:
+            user_Trans={}
+            user_Trans['transcation_id']=userTrans.transcation_id
+            user_Trans['date']=userTrans.date
+            user_Trans['typeCurr']=userTrans.typeCurr
+            user_Trans['Curr']=userTrans.Curr
+            user_Trans['typeTrans']=userTrans.typeTrans
+            user_Trans['priceofCryptoATTrans']=userTrans.priceofCryptoATTrans
+            user_Trans['quantityTrans']=userTrans.quantityTrans
+            user_Trans['TranscationValue']=userTrans.TranscationValue
+            output.append(user_Trans)
+        return jsonify(userTranscations=output)
+    else:
+        return jsonify(message="No Transcations")
 
 
 @app.route('/api/logout')
