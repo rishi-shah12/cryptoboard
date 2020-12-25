@@ -329,7 +329,7 @@ def buyCrypto (current_user, portfolio_id):
                 quantityTrans=trans['quantityTrans'],
                 TranscationValue= transactionValue
             )
-            userPort.cash=cash-cost
+            userPort.cash=cash-transactionValue
             db.session.add(newTrans)
             db.session.commit()
             return jsonify(message="Successful Transcation")
