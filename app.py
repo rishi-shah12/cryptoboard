@@ -223,7 +223,8 @@ def portfolioCreate(current_user):
                 dateCreated=datetime.datetime.now(),
                 marketValue=portfolio['marketValue'],
                 cash=portfolio['cash'],
-                currency=portfolio['currency']
+                currency=portfolio['currency'],
+                institution=portfolio['institution']
 
         )
         db.session.add(newPortfolio)
@@ -246,6 +247,7 @@ def portfolioView(current_user):
             portfolio['portfolio_id']=port.portfolio_id
             portfolio['cash']=port.cash
             portfolio['currency']=port.currency
+            portfolio['institution']=port.institution
             output.append(portfolio)
         return jsonify(userPortfolios=output)
     else:
@@ -281,6 +283,7 @@ def viewPortfolio(current_user,portfolio_id):
         portfolio['dateCreated'] =userPort.dateCreated
         portfolio['cash']=userPort.cash
         portfolio['currency']=userPort.currency
+        portfolio['institution']=userPort.institution
 
         return jsonify(portfolio=portfolio)
     else:
