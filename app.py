@@ -306,12 +306,20 @@ def deletePortfolio(current_user, portfolio_id):
 @app.route('/api/cryptoTransaction/<portfolio_id>', methods=['POST'])
 @token_required
 def buyCrypto (current_user, portfolio_id):
+    trans=request.form
+   
+    
     user={}
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    trans=request.form
-    priceperunit=float(trans['priceofTrans'])
+    if userPort:
+        portfolio={}
+        portfolio['curr']=userPort.currency
+        currency=str(portfolio['curr'])
+
     units=float(trans['quantityTrans'])
+    name=str(trans['curr'])   
+    priceperunit=float(cryptocompare.get_historical_price_hour(name,curr=currency)[0]['close'])
     transactionValue=round(units*priceperunit,2)
     if userPort:
         portfolio={}
@@ -327,7 +335,7 @@ def buyCrypto (current_user, portfolio_id):
                 typeCurr="CRYPTO",
                 Curr=trans['curr'],
                 typeTrans="BUY",
-                priceofCryptoATTrans=trans['priceofTrans'],
+                priceofCryptoATTrans=priceperunit,
                 quantityTrans=trans['quantityTrans'],
                 TranscationValue= transactionValue
             )
@@ -343,12 +351,18 @@ def buyCrypto (current_user, portfolio_id):
 @app.route('/api/cryptoSell/<portfolio_id>', methods=['POST'])
 @token_required
 def sellCrypto (current_user, portfolio_id):
+    trans=request.form
     user={}
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    trans=request.form
-    priceperunit=float(trans['priceofTrans'])
+    if userPort:
+        portfolio={}
+        portfolio['curr']=userPort.currency
+        currency=str(portfolio['curr'])
+
     units=float(trans['quantityTrans'])
+    name=str(trans['curr'])   
+    priceperunit=float(cryptocompare.get_historical_price_hour(name,curr=currency)[0]['close'])
     transactionValue=round(units*priceperunit,2)
     if userPort:
         portfolio={}
@@ -364,7 +378,7 @@ def sellCrypto (current_user, portfolio_id):
                 typeCurr="CRYPTO",
                 Curr=trans['curr'],
                 typeTrans="SELL",
-                priceofCryptoATTrans=trans['priceofTrans'],
+                priceofCryptoATTrans=priceperunit,
                 quantityTrans=trans['quantityTrans'],
                 TranscationValue= transactionValue
             )
