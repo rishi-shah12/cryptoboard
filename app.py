@@ -486,29 +486,44 @@ def marketValue(current_user,portfolio_id):
             output.append(user_Trans)
         ethQuantity=0
         btcQuantity=0
-       
+        ethInvested=0
+        btcInvested=0
         for trans in output:
             if str(trans['typeCurr'])=="CRYPTO":
                 if str(trans['Curr'])=="ETH":
                     if str(trans['typeTrans'])=="BUY":
                         ethQuantity+=float(trans['quantityTrans'])
-                        
+                        ethInvested+=float(trans['TranscationValue'])
                     else:
                         ethQuantity+=-float(trans['quantityTrans'])
                         
                 elif str(trans['Curr'])=="BTC":
                         if str(trans['typeTrans'])=="BUY":
                             btcQuantity+=float(trans['quantityTrans'])
+                            btcInvested+=float(trans['TranscationValue'])
                         else:
                             btcQuantity+=-float(trans['quantityTrans'])
         ethValue=ethQuantity*priceETH
         btcValue=btcQuantity*priceBTC
+        gainETH=ethValue-ethInvested
+        gainBTC=btcValue-btcInvested
+
+        gainETHper=round((ethValue-ethInvested)/ethInvested)*100,2)
+        gainBTCper=round((btcValue-btcInvested)/btcInvested)*100,2)
+
+
 
         portfolioCrypto={}
         portfolioCrypto['BTCQuantity']=btcQuantity
         portfolioCrypto['ETHQuantity']=ethQuantity
         portfolioCrypto['ETHValue']=ethValue
         portfolioCrypto['BTCValue']=btcValue
+        portfolioCrypto['marketValue']=btcValue+ethValue
+        portfolioCrypto['gainETH']=gainETH
+        portfolioCrypto['gainETHper']=gainETHper
+        portfolioCrypto['gainBTC']=gainBTC
+        portfolioCrypto['gainBTCper']=gainBTCper
+
 
         return jsonify(message=portfolioCrypto)
 
