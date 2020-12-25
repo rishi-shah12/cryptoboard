@@ -308,14 +308,15 @@ def buyCrypto (current_user, portfolio_id):
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
     trans=request.form
-    cost=float(trans['TranscationValue'])
-    
+    priceperunit=float(trans['priceofTrans'])
+    units=float(trans['quantityTrans'])
+    transactionValue=round(units*priceperunit,2)
     if userPort:
         portfolio={}
         portfolio['cash']=userPort.cash
         cash=float(portfolio['cash'])
     if userPort:
-        if cash >=cost:
+        if cash >=transactionValue:
             newTrans=Transcation(
                 user_id=user['public_id'],
                 portfolio_id=portfolio_id,
@@ -325,10 +326,10 @@ def buyCrypto (current_user, portfolio_id):
                 Curr=trans['curr'],
                 typeTrans="BUY",
                 priceofCryptoATTrans=trans['priceofTrans'],
-                quantityTrans=round((float(trans['TranscationValue'])/float(trans['priceofTrans'])), 2),
-                TranscationValue=trans['TranscationValue']
+                quantityTrans=trans['quantityTrans'],
+                TranscationValue= transactionValue
             )
-            userPort.cash=cash-cost
+            userPort.cash=cash-transactionValue
             db.session.add(newTrans)
             db.session.commit()
             return jsonify(message="Successful Transcation")
