@@ -337,6 +337,41 @@ def buyCrypto (current_user, portfolio_id):
             return jsonify(message="You do not have the necessary funds")
     else:
         return jsonify(message="Portfolio not found")
+        @app.route('/api/cryptoTransaction/<portfolio_id>', methods=['POST'])
+@token_required
+def sellCrypto (current_user, portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    trans=request.form
+    priceperunit=float(trans['priceofTrans'])
+    units=float(trans['quantityTrans'])
+    transactionValue=round(units*priceperunit,2)
+    if userPort:
+        portfolio={}
+        portfolio['cash']=userPort.cash
+        cash=float(portfolio['cash'])
+    if userPort:
+        
+        newTrans=Transcation(
+                user_id=user['public_id'],
+                portfolio_id=portfolio_id,
+                transcation_id=str(uuid.uuid4()),
+                date=datetime.datetime.now(),
+                typeCurr="CRYPTO",
+                Curr=trans['curr'],
+                typeTrans="SELL",
+                priceofCryptoATTrans=trans['priceofTrans'],
+                quantityTrans=trans['quantityTrans'],
+                TranscationValue= transactionValue
+            )
+        userPort.cash=cash+transactionValue
+        db.session.add(newTrans)
+        db.session.commit()
+        return jsonify(message="Successful Transcation")
+        
+    else:
+        return jsonify(message="Portfolio not found")
 
 @app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
 @token_required
