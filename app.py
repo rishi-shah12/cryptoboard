@@ -17,6 +17,8 @@ import datetime
 import requests
 from functools import wraps
 from flask import Flask, session
+import cryptocompare
+
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__)) #Where to store the file for the db (same folder as the running application)
@@ -441,24 +443,82 @@ def withdrawlCash (current_user, portfolio_id):
         
     else:
         return jsonify(message="Portfolio not found")
+@app.route('/api/getMarketValue/<portfolio_id>', methods=['GET'])
+@token_required
+def marketValue(current_user,portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    
+    if userPort:
+        portfolio={}
+        portfolio['curr']=userPort.currency
+        currency=str(portfolio['curr'])
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
+    output=[]
+    priceBTC=float(cryptocompare.get_historical_price_hour('BTC',curr=currency)[0]['close'])
+    priceETH=float(cryptocompare.get_historical_price_hour('ETH',curr=currency)[0]['close'])
+    if userTrans:
+        for Trans in userTrans:
+            user_Trans={}
+            user_Trans['transcation_id']=Trans.transcation_id
+            user_Trans['date']=Trans.date
+            user_Trans['typeCurr']=Trans.typeCurr
+            user_Trans['Curr']=Trans.Curr
+            user_Trans['typeTrans']=Trans.typeTrans
+            user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
+            user_Trans['quantityTrans']=Trans.quantityTrans
+            user_Trans['TranscationValue']=Trans.TranscationValue
+            output.append(user_Trans)
+        ethQuantity=0
+        btcQuantity=0
+       
+        for trans in output:
+            if str(trans['typeCurr'])=="CRYPTO":
+                if str(trans['Curr'])=="ETH":
+                    if str(trans['typeTrans'])=="BUY":
+                        ethQuantity+=float(trans['quantityTrans'])
+                        
+                    else:
+                        ethQuantity+=-float(trans['quantityTrans'])
+                        
+                elif str(trans['Curr'])=="BTC":
+                        if str(trans['typeTrans'])=="BUY":
+                            btcQuantity+=float(trans['quantityTrans'])
+                        else:
+                            btcQuantity+=-float(trans['quantityTrans'])
+        ethValue=ethQuantity*priceETH
+        btcValue=btcQuantity*priceBTC
+
+        portfolioCrypto={}
+        portfolioCrypto['BTCQuantity']=btcQuantity
+        portfolioCrypto['ETHQuantity']=ethQuantity
+        portfolioCrypto['ETHValue']=ethValue
+        portfolioCrypto['BTCValue']=btcValue
+
+        return jsonify(message=portfolioCrypto)
+
+        
 
 
 @app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
 @token_required
 def transcations (current_user, portfolio_id):
-    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    user={}
+    user['public_id']=current_user.public_id
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
     output=[]
     if userTrans:
         for Trans in userTrans:
             user_Trans={}
-            user_Trans['transcation_id']=userTrans.transcation_id
-            user_Trans['date']=userTrans.date
-            user_Trans['typeCurr']=userTrans.typeCurr
-            user_Trans['Curr']=userTrans.Curr
-            user_Trans['typeTrans']=userTrans.typeTrans
-            user_Trans['priceofCryptoATTrans']=userTrans.priceofCryptoATTrans
-            user_Trans['quantityTrans']=userTrans.quantityTrans
-            user_Trans['TranscationValue']=userTrans.TranscationValue
+            user_Trans['transcation_id']=Trans.transcation_id
+            user_Trans['date']=Trans.date
+            user_Trans['typeCurr']=Trans.typeCurr
+            user_Trans['Curr']=Trans.Curr
+            user_Trans['typeTrans']=Trans.typeTrans
+            user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
+            user_Trans['quantityTrans']=Trans.quantityTrans
+            user_Trans['TranscationValue']=Trans.TranscationValue
             output.append(user_Trans)
         return jsonify(userTranscations=output)
     else:
