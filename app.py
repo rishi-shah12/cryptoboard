@@ -304,14 +304,9 @@ def buyCrypto (current_user, portfolio_id):
     user={}
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    # cash=float(userPort['cash'])
-    # price=float(trans['priceofTrans'])
     trans=request.form
-    # user_trans={}
-    # user_trans['cash']=userPort.cash
     cost=float(trans['TranscationValue'])
-    # cash=float(userPort['cash'])
-    # cash=float(user_trans['cash'])
+    
     if userPort:
         portfolio={}
         portfolio['cash']=userPort.cash
@@ -330,6 +325,7 @@ def buyCrypto (current_user, portfolio_id):
                 quantityTrans=round((float(trans['TranscationValue'])/float(trans['priceofTrans'])), 2),
                 TranscationValue=trans['TranscationValue']
             )
+            userPort.cash=cash-cost
             db.session.add(newTrans)
             db.session.commit()
             return jsonify(message="Successful Transcation")
@@ -338,7 +334,26 @@ def buyCrypto (current_user, portfolio_id):
     else:
         return jsonify(message="Portfolio not found")
 
-
+@app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
+@token_required
+def transcations (current_user, portfolio_id):
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    output=[]
+    if userTrans:
+        for Trans in userTrans:
+            user_Trans={}
+            user_Trans['transcation_id']=userTrans.transcation_id
+            user_Trans['date']=userTrans.date
+            user_Trans['typeCurr']=userTrans.typeCurr
+            user_Trans['Curr']=userTrans.Curr
+            user_Trans['typeTrans']=userTrans.typeTrans
+            user_Trans['priceofCryptoATTrans']=userTrans.priceofCryptoATTrans
+            user_Trans['quantityTrans']=userTrans.quantityTrans
+            user_Trans['TranscationValue']=userTrans.TranscationValue
+            output.append(user_Trans)
+        return jsonify(userTranscations=output)
+    else:
+        return jsonify(message="No Transcations")
 
 
 @app.route('/api/logout')
