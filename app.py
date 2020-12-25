@@ -79,7 +79,7 @@ class Portfolio(db.Model):
 class Transcation(db.Model):
     id=Column(Integer,primary_key=True)
     user_id=Column(String(50))
-    portfolio_id=Column(String(50),unique=True)
+    portfolio_id=Column(String(50))
     transcation_id=Column(String(50),unique=True)
     date=Column(String())
     typeCurr=Column(String())
@@ -87,6 +87,7 @@ class Transcation(db.Model):
     typeTrans=Column(String())
     priceofCryptoATTrans=Column(Float)
     quantityTrans=Column(Float)
+    TranscationValue=Column(Float)
 
 
 def token_required(f):
@@ -306,15 +307,19 @@ def buyCrypto (current_user, portfolio_id):
     # cash=float(userPort['cash'])
     # price=float(trans['priceofTrans'])
     trans=request.form
-    user_trans={}
-    user_trans['cash']=userPort.cash
-    
-    cash = jsonify(user_trans['cash'])
-    price=jsonify(trans['priceofTrans'])
+    # user_trans={}
+    # user_trans['cash']=userPort.cash
+    cost=float(trans['TranscationValue'])
+    # cash=float(userPort['cash'])
+    # cash=float(user_trans['cash'])
     if userPort:
-        if cash >=price:
+        portfolio={}
+        portfolio['cash']=userPort.cash
+        cash=float(portfolio['cash'])
+    if userPort:
+        if cash >=cost:
             newTrans=Transcation(
-                user_id=user_data['public_id'],
+                user_id=user['public_id'],
                 portfolio_id=portfolio_id,
                 transcation_id=str(uuid.uuid4()),
                 date=datetime.datetime.now(),
@@ -322,7 +327,8 @@ def buyCrypto (current_user, portfolio_id):
                 Curr=trans['curr'],
                 typeTrans="BUY",
                 priceofCryptoATTrans=trans['priceofTrans'],
-                quantityTrans=trans['quantity']
+                quantityTrans=round((float(trans['TranscationValue'])/float(trans['priceofTrans'])), 2),
+                TranscationValue=trans['TranscationValue']
             )
             db.session.add(newTrans)
             db.session.commit()
