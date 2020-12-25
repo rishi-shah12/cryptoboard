@@ -337,7 +337,8 @@ def buyCrypto (current_user, portfolio_id):
             return jsonify(message="You do not have the necessary funds")
     else:
         return jsonify(message="Portfolio not found")
-        @app.route('/api/cryptoTransaction/<portfolio_id>', methods=['POST'])
+
+@app.route('/api/cryptoSell/<portfolio_id>', methods=['POST'])
 @token_required
 def sellCrypto (current_user, portfolio_id):
     user={}
@@ -366,6 +367,38 @@ def sellCrypto (current_user, portfolio_id):
                 TranscationValue= transactionValue
             )
         userPort.cash=cash+transactionValue
+        db.session.add(newTrans)
+        db.session.commit()
+        return jsonify(message="Successful Transcation")
+        
+    else:
+        return jsonify(message="Portfolio not found")
+
+@app.route('/api/deposit/<portfolio_id>', methods=['POST'])
+@token_required
+def depositCash (current_user, portfolio_id):
+    user={}
+    user['public_id']=current_user.public_id
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    trans=request.form
+    if userPort:
+        portfolio={}
+        portfolio['cash']=userPort.cash
+        cash=float(portfolio['cash'])
+    if userPort:
+        newTrans=Transcation(
+                user_id=user['public_id'],
+                portfolio_id=portfolio_id,
+                transcation_id=str(uuid.uuid4()),
+                date=datetime.datetime.now(),
+                typeCurr="CASH",
+                Curr=userPort.currency,
+                typeTrans="DEPOSIT",
+                priceofCryptoATTrans=0,
+                quantityTrans=0,
+                TranscationValue=trans['cash']
+            )
+        userPort.cash=cash+float(trans['cash'])
         db.session.add(newTrans)
         db.session.commit()
         return jsonify(message="Successful Transcation")
