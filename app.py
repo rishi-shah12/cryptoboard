@@ -18,6 +18,8 @@ import requests
 import cryptocompare
 from functools import wraps
 from flask import Flask, session
+
+
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__)) #Where to store the file for the db (same folder as the running application)
@@ -103,7 +105,7 @@ def token_required(f):
             if 'cookie' in request.headers:
                 token=session['token']
             if 'cookie' not in request.headers:
-                return jsonify(message='Token is missing'),401
+                return render_template('default-error.jinja2', message="No Cookie In the Header"),401
             try:
                 data=jwt.decode(token, app.config['SECRET_KEY'])
                 current_user=User.query.filter_by(public_id=data['public_id']).first()
@@ -142,7 +144,7 @@ def get_current_value(current_user, portfolio_id):
             user_Trans['TranscationValue'] = Trans.TranscationValue
             UserTrans.append(user_Trans)
     else:
-        return jsonify(message="No Transcations")
+        return render_template('default-error-logged-in.jinja2', message="No Transactions", userdata=session['userData'])
 
     userPort = Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
 
@@ -212,14 +214,13 @@ def get_current_value(current_user, portfolio_id):
 @app.route('/api/login', methods=['POST'])
 def login():
     login=request.form
-    print(login)
 
     user=User.query.filter_by(email=login['email']).first() #Qeuried id=email
 
     if not user:
-        return jsonify(message='A user with this email does not exist.')
+        return render_template('error-login.jinja2', message="A user with this email does not exist.")
     if not check_password_hash(user.password,login['password']):
-        return jsonify(message='Incorrect Password')
+        return render_template('error-login.jinja2', message="Incorrect Password")
     if not user.confirmedEmail:
         return render_template('verify-email.jinja2')
     if check_password_hash(user.password,login['password']): #queried password
@@ -229,7 +230,7 @@ def login():
         redir.headers['x-access-tokens'] = token
         return redir
     else:
-        return jsonify(message='Your email or password is incorrect'),401
+        return render_template('error-login.jinja2', message='Your email or password is incorrect')
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -238,9 +239,9 @@ def register():
     test=User.query.filter_by(email=emailUser).first()
 
     if test:
-        return jsonify(message='A user with this email already exists.'), 409
+        return render_template('error-signin.jinja2', message='A User with this email already exists'), 409
     if data['password'] != data['confirmPassword']:
-        return jsonify(message='Passwords do not  match')
+        return render_template('error-signin.jinja2', message='Passwords do not match'), 409
     else:
         hashed_password=generate_password_hash(data['password'], method='sha256')
         new_user=User(
@@ -535,7 +536,7 @@ def refund(current_user, portfolio_id, transcation_id):
 
     db.session.delete(userTrans)
     db.session.commit()
-    return url_for('/api/getTransaction/', portfolio_id=portfolio_id)
+    return redirect('/api/getTransaction/', + portfolio_id)
 
 @app.route('/api/deposit/<portfolio_id>')
 @token_required
@@ -617,65 +618,6 @@ def withdrawCash(current_user, portfolio_id):
         return jsonify(message="Portfolio not found")
 
 
-@app.route('/api/getMarketValue/<portfolio_id>', methods=['GET'])
-@token_required
-def marketValue(current_user,portfolio_id):
-    user={}
-    user['public_id']=current_user.public_id
-    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-
-    if userPort:
-        portfolio={}
-        portfolio['curr']=userPort.currency
-        currency=str(portfolio['curr'])
-    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
-    output=[]
-    priceBTC = float(cryptocompare.get_price('BTC', curr=currency)['BTC'][currency])
-    priceETH = float(cryptocompare.get_price('ETH', curr=currency)['ETH'][currency])
-
-    if userTrans:
-        for Trans in userTrans:
-            user_Trans={}
-            user_Trans['transcation_id']=Trans.transcation_id
-            user_Trans['date']=Trans.date
-            user_Trans['typeCurr']=Trans.typeCurr
-            user_Trans['Curr']=Trans.Curr
-            user_Trans['typeTrans']=Trans.typeTrans
-            user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
-            user_Trans['quantityTrans']=Trans.quantityTrans
-            user_Trans['TranscationValue']=Trans.TranscationValue
-            output.append(user_Trans)
-        ethQuantity=0
-        btcQuantity=0
-
-        for trans in output:
-            if str(trans['typeCurr'])=="CRYPTO":
-                if str(trans['Curr'])=="ETH":
-                    if str(trans['typeTrans'])=="BUY":
-                        ethQuantity+=float(trans['quantityTrans'])
-
-                    else:
-                        ethQuantity+=-float(trans['quantityTrans'])
-
-                elif str(trans['Curr'])=="BTC":
-                        if str(trans['typeTrans'])=="BUY":
-                            btcQuantity+=float(trans['quantityTrans'])
-                        else:
-                            btcQuantity+=-float(trans['quantityTrans'])
-        ethValue=ethQuantity*priceETH
-        btcValue=btcQuantity*priceBTC
-
-        portfolioCrypto={}
-        portfolioCrypto['BTCQuantity']=btcQuantity
-        portfolioCrypto['ETHQuantity']=ethQuantity
-        portfolioCrypto['ETHValue']=ethValue
-        portfolioCrypto['BTCValue']=btcValue
-
-        return jsonify(message=portfolioCrypto)
-
-
-
-
 @app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
 @token_required
 def transcations(current_user, portfolio_id):
@@ -734,6 +676,7 @@ def transcations(current_user, portfolio_id):
                     ethInvested += float(trans['TranscationValue'])
                 else:
                     ethQuantity += -float(trans['quantityTrans'])
+                    ethInvested += -float(trans['TranscationValue'])
 
             elif str(trans['Curr']) == "BTC":
                 if str(trans['typeTrans']) == "BUY":
@@ -741,10 +684,15 @@ def transcations(current_user, portfolio_id):
                     btcInvested += float(trans['TranscationValue'])
                 else:
                     btcQuantity += -float(trans['quantityTrans'])
+                    btcInvested += -float(trans['TranscationValue'])
     ethValue = ethQuantity * priceETH
     btcValue = btcQuantity * priceBTC
     gainETH = ethValue - ethInvested
     gainBTC = btcValue - btcInvested
+    print(btcQuantity)
+    print(priceBTC)
+    print(btcValue)
+    print(btcInvested)
     gainBTCper = 0.0
     gainETHper = 0.0
     if ethQuantity == 0.0:
@@ -800,12 +748,14 @@ def deletePortfolio(current_user, portfolio_id):
 def timeout_page():
     session.pop('token', None)
     session.pop('firstName', None)
+    session.pop('userData', None)
     return render_template('timeout-login.jinja2')
 
 @app.route('/api/logout')
 def logout_page():
     session.pop('token', None)
     session.pop('firstName', None)
+    session.pop('userData', None)
     return render_template('signed-out.jinja2')
 
 @app.route('/api/register')
@@ -818,12 +768,19 @@ def login_page():
 
 
 @app.route('/api/home')
-def logged_in_landing_page():
+@token_required
+def logged_in_landing_page(current_user):
     return render_template('logged-in-landing-page.jinja2', userdata=session['userData'])
 
 @app.route('/')
 def landing_page():
     return render_template('landing-page.jinja2')
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('404error.jinja2'), 404
 
 if __name__ == "__main__":
     app.debug = True
