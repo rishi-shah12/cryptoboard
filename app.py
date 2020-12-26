@@ -91,7 +91,7 @@ class Transcation(db.Model):
     typeTrans=Column(String())
     priceofCryptoATTrans=Column(Float)
     quantityTrans=Column(Float)
-    TranscationValue = Column(Float)
+    TranscationValue=Column(Float)
 
 def token_required(f):
     @wraps(f)
