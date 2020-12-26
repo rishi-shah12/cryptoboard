@@ -5,6 +5,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     {% block head %}
 
     {% endblock %}
@@ -47,11 +48,11 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-center">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('landing_page') }}"><img src="../static/logo.png" alt="" width="140" height="50"></a>
+            <a class="navbar-brand" href="{{ url_for('logged_in_landing_page') }}"><img src="../../static/logo.png" alt="" width="140" height="50"></a>
             <div class="collapse navbar-collapse" id="navbarNav">
-              <ul class="navbar-nav mr-auto">
+              <ul class="navbar-nav">
                 <li class="nav-item">
-                  <a class="nav-link active" href="{{ url_for('landing_page') }}">Home</a>
+                  <a class="nav-link active" href="{{ url_for('logged_in_landing_page') }}">Home</a>
                 </li>
                 <li class="nav-item">
                   <a class="nav-link active" href="{{ url_for('portfolioView') }}">My Portfolios</a>
@@ -64,9 +65,10 @@
                 </li>
               </ul>
             </div>
-            <div class="navbar-nav">
-                <a class="btn" href="{{ url_for('register_page') }}" role="button">Register</a>
-                <a class="nav-link active" aria-current="page" href="{{ url_for('login_page') }}">Login</a>
+            <div class="navbar-nav" style="white-space: nowrap;:">
+                <a class="nav-link active" aria-current="page" >Hi {{ userdata['firstName'] }}  |</a>
+                <a class="btn" href="{{ url_for('logout_page') }}" role="button">Sign Out</a>
+
             </div>
         </div>
     </nav>
