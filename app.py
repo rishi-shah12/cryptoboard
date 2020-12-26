@@ -457,63 +457,6 @@ def withdrawlCash (current_user, portfolio_id):
         
     else:
         return jsonify(message="Portfolio not found")
-@app.route('/api/getMarketValue/<portfolio_id>', methods=['GET'])
-@token_required
-def marketValue(current_user,portfolio_id):
-    user={}
-    user['public_id']=current_user.public_id
-    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    
-    if userPort:
-        portfolio={}
-        portfolio['curr']=userPort.currency
-        currency=str(portfolio['curr'])
-    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
-    output=[]
-    priceBTC=float(cryptocompare.get_historical_price_hour('BTC',curr=currency)[0]['close'])
-    priceETH=float(cryptocompare.get_historical_price_hour('ETH',curr=currency)[0]['close'])
-    if userTrans:
-        for Trans in userTrans:
-            user_Trans={}
-            user_Trans['transcation_id']=Trans.transcation_id
-            user_Trans['date']=Trans.date
-            user_Trans['typeCurr']=Trans.typeCurr
-            user_Trans['Curr']=Trans.Curr
-            user_Trans['typeTrans']=Trans.typeTrans
-            user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
-            user_Trans['quantityTrans']=Trans.quantityTrans
-            user_Trans['TranscationValue']=Trans.TranscationValue
-            output.append(user_Trans)
-        ethQuantity=0
-        btcQuantity=0
-       
-        for trans in output:
-            if str(trans['typeCurr'])=="CRYPTO":
-                if str(trans['Curr'])=="ETH":
-                    if str(trans['typeTrans'])=="BUY":
-                        ethQuantity+=float(trans['quantityTrans'])
-                        
-                    else:
-                        ethQuantity+=-float(trans['quantityTrans'])
-                        
-                elif str(trans['Curr'])=="BTC":
-                        if str(trans['typeTrans'])=="BUY":
-                            btcQuantity+=float(trans['quantityTrans'])
-                        else:
-                            btcQuantity+=-float(trans['quantityTrans'])
-        ethValue=ethQuantity*priceETH
-        btcValue=btcQuantity*priceBTC
-
-        portfolioCrypto={}
-        portfolioCrypto['BTCQuantity']=btcQuantity
-        portfolioCrypto['ETHQuantity']=ethQuantity
-        portfolioCrypto['ETHValue']=ethValue
-        portfolioCrypto['BTCValue']=btcValue
-
-        return jsonify(message=portfolioCrypto)
-
-        
-
 
 @app.route('/api/getTransaction/<portfolio_id>', methods=['GET'])
 @token_required
@@ -521,7 +464,7 @@ def transcations (current_user, portfolio_id):
     user={}
     user['public_id']=current_user.public_id
     userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
-    output=[]
+    UserTrans=[]
     if userTrans:
         for Trans in userTrans:
             user_Trans={}
@@ -533,10 +476,70 @@ def transcations (current_user, portfolio_id):
             user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
             user_Trans['quantityTrans']=Trans.quantityTrans
             user_Trans['TranscationValue']=Trans.TranscationValue
-            output.append(user_Trans)
-        return jsonify(userTranscations=output)
+            UserTrans.append(user_Trans)
     else:
         return jsonify(message="No Transcations")
+
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    
+    if userPort:
+        portfolio={}
+        portfolio['curr']=userPort.currency
+        currency=str(portfolio['curr'])
+   
+    priceBTC=float(cryptocompare.get_historical_price_hour('BTC',curr=currency)[0]['close'])
+    priceETH=float(cryptocompare.get_historical_price_hour('ETH',curr=currency)[0]['close'])
+    ethQuantity=0
+    btcQuantity=0
+    ethInvested=0
+    btcInvested=0
+    for trans in UserTrans:
+        if str(trans['typeCurr'])=="CRYPTO":
+            if str(trans['Curr'])=="ETH":
+                if str(trans['typeTrans'])=="BUY":
+                    ethQuantity+=float(trans['quantityTrans'])
+                    ethInvested+=float(trans['TranscationValue'])
+                else:
+                    ethQuantity+=-float(trans['quantityTrans'])
+                        
+            elif str(trans['Curr'])=="BTC":
+                    if str(trans['typeTrans'])=="BUY":
+                        btcQuantity+=float(trans['quantityTrans'])
+                        btcInvested+=float(trans['TranscationValue'])
+                    else:
+                        btcQuantity+=-float(trans['quantityTrans'])
+    ethValue=ethQuantity*priceETH
+    btcValue=btcQuantity*priceBTC
+    gainETH=ethValue-ethInvested
+    gainBTC=btcValue-btcInvested
+    gainBTCper=0.0
+    gainETHper=0.0
+    if ethInvested==0.0:
+        gainETHper=0.0
+    elif btcInvested==0:
+        gainBTCper=0.0
+    elif btcInvested!=0:
+        gainBTCper=(gainBTC/btcInvested)*100
+    elif ethInvested!=0:
+        gainETHper=(gainETH/ethInvested)*100
+   
+
+    portfolioCrypto={}
+    portfolioCrypto['BTCQuantity']=btcQuantity
+    portfolioCrypto['ETHQuantity']=ethQuantity
+    portfolioCrypto['ETHValue']=ethValue
+    portfolioCrypto['BTCValue']=btcValue
+    portfolioCrypto['marketValue']=btcValue+ethValue
+    portfolioCrypto['gainETH']=gainETH
+    portfolioCrypto['gainETHper']=gainETHper
+    portfolioCrypto['gainBTC']=gainBTC
+    portfolioCrypto['gainBTCper']=gainBTCper
+
+    allData=[]
+    allData.append(portfolioCrypto)
+
+    values=[allData,UserTrans]
+    return jsonify(message=values)
 
 
 @app.route('/api/logout')
