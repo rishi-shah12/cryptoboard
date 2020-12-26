@@ -1,4 +1,4 @@
-{% extends 'base-logged-in.jinja2' %}
+{% extends 'base.jinja2' %}
 
 {% block head %}
 
@@ -53,9 +53,9 @@
     <div class="page-wrapper" >
         <div class="title-wrapper">
         <div class="bg-wrapper">
-            <h1>Welcome to CryptoBoard.</h1>
-            <p></p>
-            <a class="btn" href="{{ url_for('portfolioView') }}" role="button">My Portfolios</a>
+            <h1>Login Required Again.</h1>
+            <p>Please Sign In Again. Timeout Limit Reached</p>
+            <a class="btn" href="{{ url_for('login_page') }}" role="button">Sign In</a>
         </div>
         </div>
     </div>
