@@ -318,9 +318,13 @@ def portfolioCreate(current_user):
     user_data['public_id']=current_user.public_id
 
     portfolio=request.form
+
     userPort=Portfolio.query.filter_by(user_id=user_data['public_id'], portfolioName=portfolio['portfolioName']).first()
     if userPort:
-        return jsonify(message="Portfolio with the same name exists"),401
+        return render_template('error-portfolio.jinja2', userdata=session['userData'], message="Portfolio with the same name exists")
+    if portfolio['cash'] != 'CAD' or portfolio['cash'] != 'USD':
+        return render_template('error-portfolio.jinja2', userdata=session['userData'],
+                               message="Currently we only support CAD and USD")
     else:
         newPortfolio=Portfolio(
                 user_id=user_data['public_id'],
@@ -350,7 +354,7 @@ def portfolioView(current_user):
             get_current_value(current_user, port.portfolio_id)
             portfolio={}
             portfolio['portfolioName']=port.portfolioName
-            portfolio['marketValue'] =port.marketValue
+            portfolio['marketValue'] =round(port.marketValue,2)
             portfolio['dateCreated'] =port.dateCreated
             portfolio['portfolio_id']=port.portfolio_id
             portfolio['cash'] = round(port.cash,2)
@@ -363,21 +367,6 @@ def portfolioView(current_user):
     else:
         return redirect('/api/add')
 
-@app.route('/api/portfolioNames', methods=['GET'])
-@token_required
-def portfolioViewNames(current_user):
-    user={}
-    user['public_id']=current_user.public_id
-    userPort=Portfolio.query.filter_by(user_id=user['public_id']).all()
-    output=[]
-    if userPort:
-        for port in userPort:
-            portfolio={}
-            portfolio['portfolioName']=port.portfolioName
-            output.append(portfolio)
-        return jsonify(userPortfolios=output)
-    else:
-        return jsonify(message="No portfolios")
 
 @app.route('/api/portfolio/<portfolio_id>', methods=['GET'])
 @token_required
@@ -427,6 +416,10 @@ def buyCrypto (current_user, portfolio_id):
 
     name = str(trans['curr'])
 
+    if name != "ETH" and name != "BTC":
+        return render_template('buycrypto-error.jinja2', userdata=session['userData'],
+                               message="We currently only support BTC and ETH", portfolio_id=portfolio_id)
+
     if trans['priceperunit'] is not "":
         priceperunit = float(trans['priceperunit'])
     else:
@@ -456,7 +449,9 @@ def buyCrypto (current_user, portfolio_id):
             db.session.commit()
             return redirect('/api/portfolio')
         else:
-            return jsonify(message="You do not have the necessary funds")
+            return render_template('buycrypto-error.jinja2', userdata=session['userData'],
+                                   message="You do not have the necessary funds", portfolio_id=portfolio_id)
+            #return jsonify(message="You do not have the necessary funds")
     else:
         return jsonify(message="Portfolio not found")
 
@@ -476,6 +471,10 @@ def sellCrypto (current_user, portfolio_id):
 
     units=float(trans['quantityTrans'])
     name = str(trans['curr'])
+
+    if name != "ETH" and name != "BTC":
+        return render_template('sellcrypto-error.jinja2', userdata=session['userData'],
+                               message="We currently only support BTC and ETH", portfolio_id=portfolio_id)
 
     if trans['priceperunit'] is not "":
         priceperunit = float(trans['priceperunit'])
@@ -536,7 +535,7 @@ def refund(current_user, portfolio_id, transcation_id):
 
     db.session.delete(userTrans)
     db.session.commit()
-    return redirect('/api/getTransaction/', + portfolio_id)
+    return redirect(url_for('transcations', portfolio_id=portfolio_id))
 
 @app.route('/api/deposit/<portfolio_id>')
 @token_required
@@ -571,7 +570,7 @@ def depositCash(current_user, portfolio_id):
         userPort.cash = cash + float(trans['cash'])
         db.session.add(newTrans)
         db.session.commit()
-        return jsonify(message="Successful Transcation")
+        return redirect('/api/portfolio')
 
     else:
         return jsonify(message="Portfolio not found")
@@ -610,8 +609,10 @@ def withdrawCash(current_user, portfolio_id):
             userPort.cash = cash - withdrawl
             db.session.add(newTrans)
             db.session.commit()
-            return jsonify(message="Successful Transcation")
+            return redirect('/api/portfolio')
         else:
+            return render_template('withdraw-error.jinja2', userdata=session['userData'],
+                                   message="You do not have the necessary funds", portfolio_id=portfolio_id)
             return jsonify(message="You do not have the funds")
 
     else:
@@ -652,7 +653,7 @@ def transcations(current_user, portfolio_id):
             user_Trans['TranscationValue'] = Trans.TranscationValue
             UserTrans.append(user_Trans)
     else:
-        return jsonify(message="No Transcations")
+        print("No transactions")
 
     userPort = Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
 

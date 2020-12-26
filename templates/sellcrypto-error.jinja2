@@ -1,4 +1,4 @@
-{% extends 'base-logged-in.jinja2' %}
+{% extends 'base-logged-in-1deep.jinja2' %}
 
 {% block head %}
 
@@ -7,7 +7,7 @@
 
     .page-wrapper{
         height: 100vh;
-        background:url('../static/91002.jpg') ;
+        background:url('../../static/91002.jpg') ;
         background-position: 0px, -50px;
         background-size: 125%;
         background-repeat: no-repeat;
@@ -66,7 +66,7 @@ btn:hover{
           <p style="font-size: 16px; padding-bottom: 3rem">{{ message }}</p>
         </div>
         <div class="buttons" style="padding-top:3rem; text-align: center;">
-            <a style="display: inline-block;" href="{{ url_for('addPortfolio') }}"><button class="btn" >Back to Setup</button></a>
+            <a style="display: inline-block;" href="{{ url_for('sellCrypto', portfolio_id=portfolio_id) }}"><button class="btn" >Back to Sell</button></a>
         </div>
         </div>
     </div>
