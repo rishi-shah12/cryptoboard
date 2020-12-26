@@ -303,6 +303,37 @@ def deletePortfolio(current_user, portfolio_id):
         return jsonify(message="Portfolio Closed")
     else:
         return jsonify(message="Portfolio does not exist")
+@app.route('/api/refund/<portfolio_id>/<transcation_id>', methods=['DELETE'])
+@token_required
+def refund(current_user, portfolio_id,transcation_id):
+
+    user={}
+    user['public_id']=current_user.public_id
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id, transcation_id=transcation_id).first()
+    userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
+    if userPort:
+        if userTrans:
+            user_Trans={}
+            user_Trans['typeTrans']=userTrans.typeTrans
+            user_Trans['TranscationValue']=userTrans.TranscationValue  
+            user_Trans['cash']=userPort.cash
+        else:
+            return jsonify(message="Transaction not found")
+    else:
+        return jsonify(message="Portfolio not found")
+
+    if user_trans['typeTrans']=="BUY":
+        userPort.cash=float(user_Trans['cash']+user_Trans['TranscationValue'])
+    else:
+        userPort.cash=float(user_Trans['cash']-user_Trans['TranscationValue'])
+
+    db.session.delete(userTrans)
+    db.session.commit()
+    return jsonify(message="Transcartion has been refunded")
+
+
+
+
 @app.route('/api/cryptoTransaction/<portfolio_id>', methods=['POST'])
 @token_required
 def buyCrypto (current_user, portfolio_id):
