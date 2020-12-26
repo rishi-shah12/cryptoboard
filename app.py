@@ -386,11 +386,7 @@ def sellCrypto (current_user, portfolio_id):
     user={}
     user['public_id']=current_user.public_id
     userPort=Portfolio.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).first()
-    if userPort:
-        portfolio={}
-        portfolio['curr']=userPort.currency
-        currency=str(portfolio['curr'])
-
+    userTrans=Transcation.query.filter_by(user_id=user['public_id'], portfolio_id=portfolio_id).all()
     units=float(trans['quantityTrans'])
     name=str(trans['curr'])   
     priceperunit=float(cryptocompare.get_historical_price_hour(name,curr=currency)[0]['close'])
@@ -399,25 +395,45 @@ def sellCrypto (current_user, portfolio_id):
         portfolio={}
         portfolio['cash']=userPort.cash
         cash=float(portfolio['cash'])
-    if userPort:
-        
+    UserTrans=[]
+    if userTrans:
+        for Trans in userTrans:
+            user_Trans={}
+            user_Trans['transcation_id']=Trans.transcation_id
+            user_Trans['date']=Trans.date
+            user_Trans['typeCurr']=Trans.typeCurr
+            user_Trans['Curr']=Trans.Curr
+            user_Trans['typeTrans']=Trans.typeTrans
+            user_Trans['priceofCryptoATTrans']=Trans.priceofCryptoATTrans
+            user_Trans['quantityTrans']=Trans.quantityTrans
+            user_Trans['TranscationValue']=Trans.TranscationValue
+            UserTrans.append(user_Trans)
+    quantityCoin=0
+    for TransU in UserTrans:
+        if TransU['Curr']==name:
+            if TransU['typeTrans']=='BUY':
+                quantityCoin+=float(TransU['quantityTrans'])
+            elif trans['typeTrans']=='SELL':
+                quantityCoin+=-float(TransU['quantityTrans'])
+    if quantityCoin >=units:
+
         newTrans=Transcation(
-                user_id=user['public_id'],
-                portfolio_id=portfolio_id,
-                transcation_id=str(uuid.uuid4()),
-                date=datetime.datetime.now(),
-                typeCurr="CRYPTO",
-                Curr=trans['curr'],
-                typeTrans="SELL",
-                priceofCryptoATTrans=priceperunit,
-                quantityTrans=trans['quantityTrans'],
-                TranscationValue= transactionValue
-            )
+                    user_id=user['public_id'],
+                    portfolio_id=portfolio_id,
+                    transcation_id=str(uuid.uuid4()),
+                    date=datetime.datetime.now(),
+                    typeCurr="CRYPTO",
+                    Curr=trans['curr'],
+                    typeTrans="SELL",
+                    priceofCryptoATTrans=priceperunit,
+                    quantityTrans=trans['quantityTrans'],
+                    TranscationValue= transactionValue
+                )
         userPort.cash=cash+transactionValue
         db.session.add(newTrans)
         db.session.commit()
         return jsonify(message="Successful Transcation")
-        
+            
     else:
         return jsonify(message="Portfolio not found")
 
