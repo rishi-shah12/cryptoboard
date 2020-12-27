@@ -1,0 +1,103 @@
+{% extends 'base.jinja2' %}
+
+{% block head %}
+
+
+<style>
+
+    .page-wrapper{
+        height: 150vh;
+        background:url('../static/91002.jpg') ;
+        background-position: 0px, -50px;
+        background-size: 125%;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+
+    .title-wrapper p{
+        font-size: 16px;
+    }
+
+    .form-signin {
+  width: 100%;
+  max-width: 330px;
+  padding: 15px;
+  margin: auto;
+}
+.form-signin .checkbox {
+  font-weight: 400;
+}
+.form-signin .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+.form-signin input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+btn:hover{
+    background-color: #371055;
+}
+
+
+
+</style>
+{% endblock %}
+
+<body>
+{% block content %}
+    <div class="page-wrapper" >
+        <div class="title-wrapper">
+            <div class="gap" style="padding-bottom: 3rem"></div>
+      <h1 style="font-size: 32px; ">About Us</h1>
+      <p style="font-size: 16px; padding-bottom: 3rem">Meet the Team Working on CryptoBoard</p>
+        </div>
+    <div style="padding-bottom: 3rem"></div>
+    <div class="container" style="text-align: center">
+  <div class="row">
+    <div class="col-sm">
+      <img style="max-width: 50%" src="../static/IMG_0009%202.JPG" alt="Italian Trulli">
+    </div>
+    <div class="col-sm">
+      Rishi is the head fullstack developer at Cryptoboard. He is a second year Computer Engineering student at the University of Waterloo.
+    </div>
+    <div class="col-sm">
+         <a style="text-decoration: none; color: black;" href="https://www.rishishah.ca"><i style="font-size: 32px;" class="ri-window-fill"></i></a>
+      <a style="text-decoration: none; color: black;" href="https://www.linkedin.com/in/rishishah2001/"><i style="font-size: 32px;" class="ri-linkedin-box-fill"></i></a>
+        <a style="text-decoration: none; color: black;" href="https://github.com/rishi-shah12"><i style="font-size: 32px;" class="ri-github-fill"></i></a>
+    </div>
+  </div>
+        <div style="padding-bottom: 2rem"></div>
+        <hr>
+        <div style="padding-bottom: 2rem"></div>
+        <div class="row">
+    <div class="col-sm">
+      <img style="max-width: 50%" src="../static/ad.jpg" alt="Italian Trulli">
+    </div>
+    <div class="col-sm">
+      Ad is the head backend developer at Cryptoboard. He is a second year Computer Engineering student at the University of Waterloo.
+    </div>
+    <div class="col-sm">
+        <a style="text-decoration: none; color: black;" href="https://adshayanb.github.io/"><i style="font-size: 32px;" class="ri-window-fill"></i></a>
+        <a style="text-decoration: none; color: black;" href="https://www.linkedin.com/in/adshayan-balendra/"><i style="font-size: 32px;" class="ri-linkedin-box-fill"></i></a>
+        <a style="text-decoration: none; color: black;" href="https://github.com/adshayanB"><i style="font-size: 32px;" class="ri-github-fill"></i></a>
+    </div>
+  </div>
+</div>
+    </div>
+{% endblock %}
+</body>
+
