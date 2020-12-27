@@ -758,6 +758,11 @@ def deletePortfolio(current_user, portfolio_id):
         return jsonify(message="Portfolio does not exist")
 
 
+@app.route('/api/makeArticle')
+@token_required
+def landingMakeArticle(current_user):
+    return render_template('make-article.jinja2', userdata=session['userData'])
+
 @app.route('/api/makeArticle', methods=['POST'])
 @token_required
 def makeArticle(current_user):
@@ -792,7 +797,10 @@ def getArticles(current_user):
             articlesData['content']=data.content
             articlesData['date']=data.date
             articles.append(articlesData)
-        return jsonify(articlesData=articles)
+
+        number = len(articles)
+        return render_template('article-overview.jinja2', number = number, output=articles, userdata=session['userData'])
+        #return jsonify(articlesData=articles)
 
     else:
         return jsonify(message="No articles at this time")
