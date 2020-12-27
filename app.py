@@ -51,7 +51,8 @@ def db_seed():
                              password=hashed_password,
                              confirmedEmail=True,
                              public_id=str(uuid.uuid4()),
-                             confirmedOn=None
+                             confirmedOn=None,
+                             admin=True
                              )
     db.session.add(testUser)
     db.session.commit()
@@ -66,6 +67,7 @@ class User(db.Model):
     email=Column(String(50), unique=True)
     password=Column(String(50))
     confirmedEmail=Column(Boolean)
+    admin=Column(Boolean)
     confirmedOn=Column(String())
 
 class Portfolio(db.Model):
@@ -78,6 +80,15 @@ class Portfolio(db.Model):
     currency = Column(String())
     institution = Column(String())
     cash = Column(Float)
+
+class Articles(db.Model):
+    id=Column(Integer,primary_key=True)
+    article_id=Column(String(50),unique=True)
+    author=Column(String(50))
+    title=Column(String())
+    subtitle=Column(String())
+    content=Column(String())
+    date=Column(String())
 
 
 class Transcation(db.Model):
@@ -251,7 +262,8 @@ def register():
                              email=data['email'],
                              password=hashed_password,
                              confirmedEmail=False,
-                             confirmedOn=None
+                             confirmedOn=None,
+                             Admin=False
                              )
         email = data['email']
         from_email = Email("cryptoboard86@gmail.com")
@@ -744,6 +756,101 @@ def deletePortfolio(current_user, portfolio_id):
         return redirect(url_for('portfolioView'))
     else:
         return jsonify(message="Portfolio does not exist")
+
+
+@app.route('/api/makeArticle')
+@token_required
+def landingMakeArticle(current_user):
+    return render_template('make-article.jinja2', userdata=session['userData'])
+
+@app.route('/api/makeArticle', methods=['POST'])
+@token_required
+def makeArticle(current_user):
+    if not current_user.admin:
+        return jsonify(message="You do not have credentials to create an article")
+    else:
+        articles = request.form
+        newArticle = Articles(
+            article_id=str(uuid.uuid4()),
+            author=articles['author'],
+            title=articles['title'],
+            subtitle=articles['subtitle'],
+            content=articles['content'],
+            date=datetime.datetime.now()
+        )
+        db.session.add(newArticle)
+        db.session.commit()
+        return jsonify(message='Data Added'), 201
+
+@app.route('/api/getArticles',methods=['GET'])
+@token_required
+def getArticles(current_user):
+    allArticles=Articles.query.all()
+    articles=[]
+    if allArticles:
+        for data in allArticles:
+            articlesData={}
+            articlesData['article_id']=data.article_id
+            articlesData['author']=data.author
+            articlesData['title']=data.title
+            articlesData['subtitle']=data.subtitle
+            articlesData['content']=data.content
+            articlesData['date']=data.date
+            articles.append(articlesData)
+
+        number = len(articles)
+        return render_template('article-overview.jinja2', number = number, output=articles, userdata=session['userData'])
+        #return jsonify(articlesData=articles)
+
+    else:
+        return jsonify(message="No articles at this time")
+
+@app.route('/api/getArticles/<article_id>', methods =['GET'])
+@token_required
+def getArticlebyId(current_user,article_id):
+    data=Articles.query.filter_by(article_id=article_id).all()
+    if data:
+        articleData={}
+        articleData['article_id']=data.article_id
+        articleData['author']=data.author
+        articleData['title']=data.title
+        articleData['subtitle']=data.subtitle
+        articleData['content']=data.content
+        articleData['date']=data.date
+
+        return jsonify(articleData=articleData)
+    else:
+        return jsonify(message="Article not found")
+@app.route('/api/deleteArticles/<article_id>', methods=['DELETE'])
+@token_required
+def deleteArticle(current_user,article_id):
+    articleDel=Articles.query.filter_by(article_id=article_id).first()
+
+
+    if articleDel:
+        db.session.delete(articleDel)
+        db.session.commit()
+        return jsonify(message='Article has been deleted')
+    else:
+        return jsonify(message='Article does not exist')
+
+
+@app.route('/api/editArticles/<article_id>', methods=['PUT'])
+@token_required
+def editArticle(current_user,article_id):
+    articleEdit=Articles.query.filter_by(article_id=article_id).first()
+    data=request.form
+    if articleEdit:
+        data.author=data['author']
+        data.title=data['title']
+        data.subtitle=data['subtitle']
+        data.content=data['content']
+        data.date=datetime.datetime.now()
+        db.session.commit()
+        return jsonify(message='Article has been edited')
+    else:
+        return jsonify(message='Article does not exist')
+
 
 @app.route('/api/timeout')
 def timeout_page():

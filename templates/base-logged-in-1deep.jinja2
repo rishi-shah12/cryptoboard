@@ -58,10 +58,10 @@
                   <a class="nav-link active" href="{{ url_for('portfolioView') }}">My Portfolios</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link active" href="#">About</a>
+                  <a class="nav-link active" href="{{ url_for('logged_in_about_page') }}">About</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link active" href="#">Learn</a>
+                  <a class="nav-link active" href="{{ url_for('getArticles') }}">Learn</a>
                 </li>
               </ul>
             </div>
