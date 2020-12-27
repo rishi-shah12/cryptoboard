@@ -773,6 +773,16 @@ def login_page():
 def logged_in_landing_page(current_user):
     return render_template('logged-in-landing-page.jinja2', userdata=session['userData'])
 
+@app.route('/api/about')
+@token_required
+def logged_in_about_page(current_user):
+    print("hello")
+    return render_template('about-logged-in.jinja2', userdata=session['userData'])
+
+@app.route('/about')
+def about_page():
+    return render_template('about.jinja2')
+
 @app.route('/')
 def landing_page():
     return render_template('landing-page.jinja2')
